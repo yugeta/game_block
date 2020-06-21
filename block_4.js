@@ -2,9 +2,9 @@
 
   var __options = {
     canvas : "#mycanvas",
-    width  : 400,
-    height : 600,
-    wall   : { w : 400 , h : 600 , color_stroke : "transparent" , color_fill : "#382B8C" , size : 20 },
+    width  : 240,
+    height : 400,
+    wall   : { w : 240 , h : 400 , color_stroke : "transparent" , color_fill : "#382B8C" , size : 20 },
     ball   : { x :  50 , y :  50 , r : 10 , color_stroke : "transparent" , color_fill : "#F2B5A7" , moveX : 4 , moveY : 4},
     bar    : { w :  60 , h :  10 , color_stroke : "transparent" , color_fill : "#958ABF" , moveX : 12 },
 
