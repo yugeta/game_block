@@ -2,10 +2,10 @@
 
   var __options = {
     canvas : "#mycanvas",
-    width  : 400,
-    height : 600,
+    width  : 240,
+    height : 400,
     wall   : {
-      w : 400 , h : 600 , 
+      w : 240 , h : 400 , 
       color_stroke : "transparent" , 
       color_fill : "#382B8C" , 
       size : 20
