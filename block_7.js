@@ -45,7 +45,8 @@
       gap_y        : 10,
       margin_top   : 59,
       margin_left  : 15,
-      area_y       : 0.4
+      area_y       : 0.4,
+      collision_col : "red"
     }
   };
 
@@ -149,6 +150,10 @@
     this.options.wall.margin_top = (this.options.wall.h - this.options.wall.size) * 0.1;
     var h = (this.options.wall.h - this.options.wall.size - this.options.wall.margin_top) * this.options.block.area_y;
     this.options.block.row = Math.round(h / (this.options.block.h + this.options.block.gap_y));
+
+    // ボール初期値（画面の中心地）
+    this.options.ball.x = this.options.wall.w * 0.5;
+    this.options.ball.y = this.options.wall.h * 0.5;
   };
 
 
@@ -238,17 +243,36 @@
     for(var i=0; i<block.row; i++){
       if(typeof buffer[i] === "undefined"){buffer[i] = [];}
       for(var j=0; j<block.col; j++){
+
         var x = block.margin_left + wall.size + (block.w * j) + (block.gap_x * j);
         var y = block.margin_top  + wall.size + (block.h * i) + (block.gap_y * i);
+
         if(typeof block.buffer === "undefined"){
           buffer[i][j] = {x : x , y : y};
           this.ctx.fillRect(x , y , block.w , block.h);
         }
-        else if(typeof block.buffer !== "undefined"
-        && typeof block.buffer[j] !== "undefined"
-        && block.buffer[j][i]){
+        else if(block.buffer[i][j].collision === true){
+          continue;
+          // this.ctx.fillStyle   = block.collision_col;
+          // this.ctx.fillRect(x , y , block.w , block.h);
+          // this.ctx.fillStyle   = block.color_fill;
+        }
+        else{
           this.ctx.fillRect(x , y , block.w , block.h);
         }
+        
+        
+        
+        
+        // if(typeof block.buffer === "undefined"){
+        //   buffer[i][j] = {x : x , y : y};
+        //   this.ctx.fillRect(x , y , block.w , block.h);
+        // }
+        // else if(typeof block.buffer !== "undefined"
+        // && typeof block.buffer[j] !== "undefined"
+        // && block.buffer[j][i]){
+        //   this.ctx.fillRect(x , y , block.w , block.h);
+        // }
       }
     }
     if(typeof block.buffer === "undefined"){
@@ -290,6 +314,7 @@
     this.options.ball.y += this.options.ball.moveY;
     this.collision_wall(this.options.wall , this.options.ball);
     this.collision_bar(this.options.bar , this.options.ball);
+    this.collision_block(this.options.block , this.options.ball);
   };
 
   // 当たり判定（壁）
@@ -350,24 +375,123 @@
       }
     }
   };
+  // 当たり判定（ブロック）
+  MAIN.prototype.collision_block = function(block , ball){
+    if(typeof block.buffer === "undefined"){return;}
+    for(var i=0; i<block.row; i++){
+      if(typeof block.buffer[i] === "undefined"){continue;}
+      for(var j=0; j<block.col; j++){
+
+        if(!block.buffer
+        || typeof block.buffer[i][j] === "undefined"
+        || !block.buffer[i][j]
+        || block.buffer[i][j].collision === true){continue;}
+
+        // 左右正反射
+        if(ball.x + ball.r > block.buffer[i][j].x
+        && ball.x - ball.r < block.buffer[i][j].x + block.h
+        && ball.y > block.buffer[i][j].y
+        && ball.y < block.buffer[i][j].y + block.h){
+          block.buffer[i][j].collision = true;
+          // ボール座標を調整
+          if(ball.moveX < 0){
+            ball.x = block.buffer[i][j].x + block.w + ball.r;
+          }
+          else{
+            ball.x = block.buffer[i][j].x - ball.r;
+          }
+          // 方向転換
+          ball.moveX = ball.moveX * -1;
+          return;
+        }
+
+        // 上下正反射
+        if(ball.y + ball.r > block.buffer[i][j].y
+        && ball.y - ball.r < block.buffer[i][j].y + block.h
+        && ball.x > block.buffer[i][j].x
+        && ball.x < block.buffer[i][j].x + block.w){
+          block.buffer[i][j].collision = true;
+          // ボール座標を調整
+          if(ball.moveY < 0){
+            ball.y = block.buffer[i][j].y + block.h + ball.r;
+          }
+          else{
+            ball.y = block.buffer[i][j].y - ball.r;
+          }
+          // 方向転換
+          ball.moveY = ball.moveY * -1;
+          return;
+        }
+
+        // 左上角判定
+        else if(Math.pow(block.buffer[i][j].x - ball.x, 2) + Math.pow(block.buffer[i][j].y - ball.y, 2) <= ball.r){
+          block.buffer[i][j].collision = true;
+          if(ball.moveX > 0 && ball.moveY > 0){
+            ball.moveX = ball.moveX * -1;
+            ball.moveY = ball.moveY * -1;
+          }
+          else if(ball.moveX < 0 && ball.moveY > 0){
+            ball.moveY = ball.moveY * -1;
+          }
+          else if(ball.moveX > 0 && ball.moveY < 0){
+            ball.moveX = ball.moveX * -1;
+          }
+          return;
+        }
+        // 右上角判定
+        else if(Math.sqrt(ball.x - block.buffer[i][j].x - block.w, 2) + Math.pow(block.buffer[i][j].y - ball.y, 2) <= ball.r){
+          block.buffer[i][j].collision = true;
+          if(ball.moveX < 0 && ball.moveY > 0){
+            ball.moveX = ball.moveX * -1;
+            ball.moveY = ball.moveY * -1;
+          }
+          else if(ball.moveX > 0 && ball.moveY > 0){
+            ball.moveY = ball.moveY * -1;
+          }
+          else if(ball.moveX < 0 && ball.moveY < 0){
+            ball.moveX = ball.moveX * -1;
+          }
+          return;
+        }
+        // 左下角判定
+        else if(Math.sqrt(block.buffer[i][j].x - ball.x, 2) + Math.pow(ball.y - block.buffer[i][j].y + block.h , 2) <= ball.r){
+          block.buffer[i][j].collision = true;
+          if(ball.moveX > 0 && ball.moveY < 0){
+            ball.moveX = ball.moveX * -1;
+            ball.moveY = ball.moveY * -1;
+          }
+          else if(ball.moveX < 0 && ball.moveY < 0){
+            ball.moveY = ball.moveY * -1;
+          }
+          else if(ball.moveX > 0 && ball.moveY > 0){
+            ball.moveX = ball.moveX * -1;
+          }
+          return;
+        }
+        // 右下角判定
+        else if(Math.sqrt(ball.x - block.buffer[i][j].x - block.w, 2) + Math.pow(ball.y - block.buffer[i][j].y + block.h , 2) <= ball.r){
+          block.buffer[i][j].collision = true;
+          if(ball.moveX < 0 && ball.moveY < 0){
+            ball.moveX = ball.moveX * -1;
+            ball.moveY = ball.moveY * -1;
+          }
+          else if(ball.moveX > 0 && ball.moveY < 0){
+            ball.moveY = ball.moveY * -1;
+          }
+          else if(ball.moveX < 0 && ball.moveY > 0){
+            ball.moveX = ball.moveX * -1;
+          }
+          return;
+        }
+
+      }
+    }
+  }
 
   MAIN.prototype.calc_angle = function(bar,ball){
-    // // 現在のボールの進行角度
-    // var angle1 = Math.atan2(Math.abs(ball.moveY) , Math.abs(ball.moveX)) * 180 / Math.PI;
-    // // 角座標とボール中心地の角度
-    // var angle2 = Math.atan2(bar.y - ball.y , bar.x - ball.x) * 180 / Math.PI;
-    // // 誤差角度を反転
-    // angle1 += -(angle1 - angle2);
-    // // 角度を反映
-    // ball.moveY = Math.sin(angle1) * ball.r;
-    // ball.moveX = Math.cos(angle1) * ball.r;
-
     // 反転
     ball.moveX = -ball.moveX;
     ball.moveY = -ball.moveY;
-
-    // console.log(angle1 +":"+ ball.moveX +"/"+ ball.moveY);
-    // console.log(angle1 +"/"+ angle2 +":"+Math.abs(ball.moveY)+"/"+Math.abs(ball.moveX));
   };
 
 
